@@ -5,6 +5,8 @@
 
 Sam Blackshear, Evan Cheng, David L. Dill, Victor Gao, Ben Maurer, Todd Nowacki, Alistair Pott, Shaz Qadeer, Rain, Dario Russi, Stephane Sezer, Tim Zakian, Runtian Zhou * 合著
 
+译者：GG@ComingChat
+
 读者须知：本报告在协会发布白皮书 v2.0 之前发布，其中包括对 Libra 支付系统的多项关键更新。已删除过时的链接，但除此之外，本报告尚未修改以包含更新，应在该上下文中阅读。
 
 
