@@ -3,6 +3,11 @@
 
 ## Move: 一种使用可编程**resources**的语言
 
+Sam Blackshear, Evan Cheng, David L. Dill, Victor Gao, Ben Maurer, Todd Nowacki, Alistair Pott, Shaz Qadeer, Rain, Dario Russi, Stephane Sezer, Tim Zakian, Runtian Zhou * 合著
+
+读者须知：本报告在协会发布白皮书 v2.0 之前发布，其中包括对 Libra 支付系统的多项关键更新。已删除过时的链接，但除此之外，本报告尚未修改以包含更新，应在该上下文中阅读。
+
+
 ## 摘要
 我们为 Libra 区块链[1][2] 提供了一种安全且灵活的编程语言，它的名字叫做Move。Move也是一种可执行的字节码语言，用于实现自定义交易和智能合约。
 
