@@ -185,3 +185,7 @@ public main(payee: address, amount: u64) {
 每个帐户可以包含零个或多个模块和一个或多个resources值。 例如，地址为 0x0 的账户包含模块 0x0.Currency 和类型为 0x0.Currency.Coin 的resources值。 地址 0x1 的账户有两个resources和一个模块； 地址 0x2 的帐户有两个模块和一个资源值。
 相比之下，模块是在全局状态下发布的一段长期存在的代码。 上面示例中使用的模块名称 0x0.Currency 包含发布模块代码的帐户地址 0x0。 全局状态被构造为从帐户地址到帐户的映射。
 ![figure1](https://github.com/coming-chat/Move-white-paper/blob/main/Figure1.png)
+
+帐户最多可以包含一个给定类型的resources值和最多一个具有给定名称的模块。 不允许地址 0x0 的帐户包含额外的 0x0.Currency.Coin resources或另一个名为 Currency 的模块。 但是，地址 0x1 的帐户可以添加一个名为 Currency 的模块。 在这种情况下，0x0 也可以拥有 0x1.Currency.Coin 类型的resources。 0x0.Currency.Coin 和 0x1.Currency.Coin 是不同的类型，不能互换使用； 声明模块的地址是类型的一部分。
+
+请注意，帐户中最多允许给定类型的单个resource不是限制性的。 此设计为顶级帐户值提供了可预测的存储架构。 程序员仍然可以通过定义自定义包装resource（例如，resource TwoCoins { c1: 0x0.Currency.Coin, c2: 0x0.Currency.Coin }）在帐户中保存给定resource类型的多个实例。
