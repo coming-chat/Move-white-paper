@@ -189,3 +189,62 @@ public main(payee: address, amount: u64) {
 帐户最多可以包含一个给定类型的resources值和最多一个具有给定名称的模块。 不允许地址 0x0 的帐户包含额外的 0x0.Currency.Coin resources或另一个名为 Currency 的模块。 但是，地址 0x1 的帐户可以添加一个名为 Currency 的模块。 在这种情况下，0x0 也可以拥有 0x1.Currency.Coin 类型的resources。 0x0.Currency.Coin 和 0x1.Currency.Coin 是不同的类型，不能互换使用； 声明模块的地址是类型的一部分。
 
 请注意，帐户中最多允许给定类型的单个resource不是限制性的。 此设计为顶级帐户值提供了可预测的存储架构。 程序员仍然可以通过定义自定义包装resource（例如，resource TwoCoins { c1: 0x0.Currency.Coin, c2: 0x0.Currency.Coin }）在帐户中保存给定resource类型的多个实例。
+
+***声明 Coin 资源***。 在解释了模块如何适应 Move 执行模型之后，我们可以开始看 Currency 模块的内部：
+```rust
+module Currency {
+  resource Coin { value: u64 }
+  // ...
+}
+```
+以上代码声明了一个Currency 的模块，里面包含了一个 名为Coin的 resource 类型。Coin 是一种结构类型，具有 u64 类型的单个字段值（64 位无符号整数）。 Coin 的结构在 Currency 模块之外是不透明的。 其他模块和交易脚本只能通过模块公开的公共过程写入或引用值字段。 同样，只有 Currency 模块的程序可以创建或销毁 Coin 类型的值。 该方案支持强大的数据抽象——模块作者可以完全控制其声明resource的访问、创建和销毁。 在 Currency 模块公开的 API 之外，另一个模块可以对 Coin 执行的唯一操作是移动。 resource安全禁止其他模块复制、破坏或双重移动resource。
+
+***deposit过程的实现***。 让我们研究上一节中交易脚本调用的 Currency.deposit 过程是如何工作的：
+```rust
+public deposit(payee: address, to_deposit: Coin) {
+  let to_deposit_value: u64 = Unpack<Coin>(move(to_deposit));
+  let coin_ref: &mut Coin = BorrowGlobal<Coin>(move(payee));
+  let coin_value_ref: &mut u64 = &mut move(coin_ref).value;
+  let coin_value: u64 = *move(coin_value_ref);
+  *move(coin_value_ref) = move(coin_value) + move(to_deposit_value);
+}
+```
+面向代码阅读者者的可读性代码逻辑。此过程将 Coin resource作为输入，并将其与存储在收款人帐户中的 Coin resource相结合。 它通过以下方式实现：
+1. 销毁输入的 Coin 并记录它的值。
+2. 获取收款人下面的唯一 resource类型的coin 引用。
+3. 加上传递给程序的 Coin 的值来更新到收款人的 Coin 的值。
+
+此过程的面向机器语言的某些方面值得解释。 绑定到 to_deposit 的 Coin 资源归存款程序所有。 要调用该过程，调用者需要将绑定到 to_deposit 的 Coin 移动到被调用者（这将阻止调用者重用它）。
+
+在第一行调用的 Unpack 过程是用于操作模块声明的类型的几个内置模块之一。 Unpack<T> 是删除 T 类型resource的唯一方法。它将 T 类型的resource作为输入，销毁它，并返回绑定到resource字段的值。 像 Unpack 这样的内置模块只能用于当前模块中声明的resource。 在 Unpack 的情况下，此约束防止其他代码销毁 Coin，这反过来又允许 Currency 模块为销毁 Coin resource设置自定义的前提条件（例如，它可以选择只允许销毁0值的Currency）。
+
+第三行调用的 BorrowGlobal 过程也是一个内置模块。 BorrowGlobal<T> 将地址作为输入并返回对在该地址下发布的 T 的唯一实例的引用。 这意味着上面代码中的 coin_ref 类型是 &mut Coin,表面这是对 Coin resource的可变引用，而不是拥有Coin resource的 本身。 下一行移动绑定到 coin_ref 的参考值，以获取 Coin 值字段的参考 coin_value_ref。 该过程的最后几行读取收款人 Coin resource的先前值，并改变 coin_value_ref 以反映存款金额。
+
+我们注意到 Move 类型系统无法捕获模块内的所有实现错误。 例如，类型系统不会确保所有存在的coin的总量通过存款调用来保存。 如果程序员在最后一行写错了 *move(coin_value_ref) = 1 + move(coin_value) + move(to_deposit_value)，类型系统将毫无疑问地接受该代码。 这表明了明确的职责分工：在模块范围内为 Coin 建立适当的安全不变量是程序员的工作，而类型系统的工作是确保模块外的 Coin 客户端不会违反这些不变量。
+
+***实现withdraw_from_sender过程***。 在上面的实现中，通过deposit程序存入资金不需要任何授权——任何人都可以调用存款。 相比之下，从帐户中取款必须受到授予货币resource所有者独占权限的访问控制策略的保护。 让我们看看我们的点对点支付交易脚本调用的withdraw_from_sender 过程是如何实现这个授权的：
+
+``` rust
+public withdraw_from_sender(amount: u64): Coin {
+  let transaction_sender_address: address = GetTxnSenderAddress();
+  let coin_ref: &mut Coin = BorrowGlobal<Coin>(move(transaction_sender_address));
+  let coin_value_ref: &mut u64 = &mut move(coin_ref).value;
+  let coin_value: u64 = *move(coin_value_ref);
+  RejectUnless(copy(coin_value) >= copy(amount));
+  *move(coin_value_ref) = move(coin_value) - copy(amount);
+  let new_coin: Coin = Pack<Coin>(move(amount));
+  return move(new_coin);
+}
+```
+这个过程几乎是deposit的逆过程，但也不全是。 如下：
+1. 获取对发送者帐户下发布的 Coin 类型的唯一resource的引用。
+2. 将引用的 Coin 的值减少输入数量。
+3. 创建并返回一个具有对应发送金额的新Coin。
+
+此过程执行的访问控制检查有些微妙。 withdraw过程允许调用者指定传递给 BorrowGlobal 的地址，但withdraw_from_sender 只能传递 GetTxnSenderAddress 返回的地址。 此过程是允许Move代码从当前正在执行的交易中读取数据的几个交易内置程序之一。 Move 虚拟机在交易执行之前验证发送者地址。 以这种方式使用 BorrowGlobal 内置确保交易的发送者只能从她自己的 Coin resource中提取资金。
+
+与所有内置模块一样，BorrowGlobal<Coin> 只能在声明 Coin 的模块内调用。 如果 Currency 模块没有公开返回 BorrowGlobal 结果的过程，则 Currency 模块之外的代码无法获取对全局存储中发布的 Coin resource的引用。
+
+在减少交易发送者的 Coin resource的值之前，该过程使用 RejectUnless 指令断言代币的价值大于或等于输入的数额。 这确保了发件者不能提取超过她所拥有的金额。 如果此检查失败，当前交易脚本的执行将停止，并且它执行的任何操作都不会更新于全局状态。
+
+最后，该过程将发送者的 Coin 的值按数量减少，并使用 Unpack 的逆操作（内置的 Pack 模块）创建一个新的 Coin resource。 Pack<T> 创建一个类型为 T 的新resource。与 Unpack<T> 一样，Pack<T> 只能在resource T 的声明模块内部调用。这里，Pack 用于创建一个类型为 Coin 的resource new_coin 并移动它 给 调用者。 调用者现在拥有此 Coin resource，并且可以将其移动到任何她喜欢的地方。 在我们第 4.1 节的示例交易脚本中，调用者选择将 Coin 存入收款人的账户。
