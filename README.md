@@ -248,3 +248,32 @@ public withdraw_from_sender(amount: u64): Coin {
 在减少交易发送者的 Coin resource的值之前，该过程使用 RejectUnless 指令断言代币的价值大于或等于输入的数额。 这确保了发件者不能提取超过她所拥有的金额。 如果此检查失败，当前交易脚本的执行将停止，并且它执行的任何操作都不会更新于全局状态。
 
 最后，该过程将发送者的 Coin 的值按数量减少，并使用 Unpack 的逆操作（内置的 Pack 模块）创建一个新的 Coin resource。 Pack<T> 创建一个类型为 T 的新resource。与 Unpack<T> 一样，Pack<T> 只能在resource T 的声明模块内部调用。这里，Pack 用于创建一个类型为 Coin 的resource new_coin 并移动它 给 调用者。 调用者现在拥有此 Coin resource，并且可以将其移动到任何她喜欢的地方。 在我们第 4.1 节的示例交易脚本中，调用者选择将 Coin 存入收款人的账户。
+
+## 5. Move 语言 详解
+在本节中，我们给出了 Move 语言、字节码验证器和虚拟机的半正式描述。 附录 A 详细列出了所有这些组成部分，但没有任何附带的散文。 我们在这里的讨论将使用附录中的摘录，并且偶尔会引用其中定义的符号。
+
+***Global state.***
+```
+  Σ ∈ GlobalState = AccountAddress ⇀ Account
+  Account = (StructID ⇀ Resource) × (ModuleName ⇀ Module)
+```
+Move 的目标是使程序员能够定义全局区块链状态并安全地实现更新全局状态的操作。 正如我们在 4.2 节中解释的那样，全局状态被组织为从地址到帐户的部分映射。 帐户包含resource数据值和模块
+代码值。 帐户中的不同resource必须具有不同的标识符。 帐户中的不同模块必须具有不同的名称。
+
+***Modules.***
+```
+Module = ModuleName × (StructName ⇀ StructDecl) × (ProcedureName ⇀ ProcedureDecl)
+ModuleID = AccountAddress × ModuleName
+StructID = ModuleID × StructName
+StructDecl = Kind × (FieldName ⇀ NonReferenceType)
+```
+
+模块由名称、结构声明（包括resource，我们稍后将解释）和过程声明组成。 代码可以使用由模块的帐户地址和模块名称组成的唯一标识符来引用已发布的模块。 模块标识符用作命名空间，用于限定其结构类型的标识符和模块外部代码的过程。
+
+Move模块支持强大的数据抽象。 模块的过程对创建、写入和销毁模块声明的类型的规则进行编码。 类型在其声明模块内部是透明的，在外部是不透明的。但Move 可以通过以下几个特定过程获得不同权限
+
+- 通过 MoveToSender 指令强制发布帐户下的resource
+- 通过 BorrowGlobal 指令获取对帐户下resource的引用
+- 通过 MoveFrom 指令从帐户中删除resource的先决条件。
+
+模块使 Move 程序员可以灵活地为resource定义丰富的访问控制策略。 例如，一个模块可以定义一个只有在其f字段为零时才能被销毁的resource类型，或者一个只能在某些帐户地址下才能被发布的resource。
