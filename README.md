@@ -277,3 +277,18 @@ Move模块支持强大的数据抽象。 模块的过程对创建、写入和销
 - 通过 MoveFrom 指令从帐户中删除resource的先决条件。
 
 模块使 Move 程序员可以灵活地为resource定义丰富的访问控制策略。 例如，一个模块可以定义一个只有在其f字段为零时才能被销毁的resource类型，或者一个只能在某些帐户地址下才能被发布的resource。
+
+***类型***
+```
+PrimitiveType = AccountAddress ∪ Bool ∪ UnsignedInt64 ∪ Bytes
+StructType = StructID × Kind
+𝒯 ⊆ NonReferenceType = StructType ∪ PrimitiveType
+Type ::= 𝒯 |&mut𝒯 |&𝒯
+```
+Move 支持基本类型，包括布尔值、64 位无符号整数、256 位帐户地址和固定大小的字节数组。 结构是由模块声明的用户定义类型。 通过使用resource种类标记结构类型，将其指定为resource。 所有其他类型，包括非resource结构类型和原始类型，都称为无限制类型。
+   
+resource类型的变量是resource变量； 不受限制类型的变量是不受限制的变量。 字节码验证器对resource变量和resource类型的结构字段实施限制。 resource变量无法复制，必须始终Move。 resource变量和resource类型的结构字段都不能重新分配 - 这样做会破坏先前保存在存储位置中的resource值。 此外，不能取消对resource类型的引用，因为这会产生底层resource的副本。 相比之下，不受限制的类型可以被复制、重新分配和取消引用。
+   
+最后，不受限制的结构类型可能不包含具有resource类型的字段。此限制确保 (a) 复制不受限制的结构不会导致嵌套resource的复制，并且 (b) 重新分配不受限制的结构不会导致嵌套resource的破坏。
+   
+引用类型可以是可变的或不可变的； 不允许通过不可变引用进行写入。 字节码验证器执行引用安全检查，以强制执行这些规则以及对resource类型的限制（参见第 5.2 节）。
