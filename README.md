@@ -292,3 +292,19 @@ resource类型的变量是resource变量； 不受限制类型的变量是不受
 最后，不受限制的结构类型可能不包含具有resource类型的字段。此限制确保 (a) 复制不受限制的结构不会导致嵌套resource的复制，并且 (b) 重新分配不受限制的结构不会导致嵌套resource的破坏。
    
 引用类型可以是可变的或不可变的； 不允许通过不可变引用进行写入。 字节码验证器执行引用安全检查，以强制执行这些规则以及对resource类型的限制（参见第 5.2 节）。
+
+***值：***
+```
+Resource = FieldName ⇀ Value
+Struct = FieldName ⇀ UnrestrictedValue
+UnrestrictedValue = Struct ∪ PrimitiveValue
+𝑣 ∈ Value = Resource ∪ UnrestrictedValue
+g ∈ GlobalResourceKey = AccountAddress × StructID
+𝑎𝑝 ∈ AccessPath ::= 𝑥|𝑔|𝑎𝑝.𝑓
+𝑟 ∈ RuntimeValue ::= 𝑣 |ref𝑎𝑝
+```
+除了结构和原始值之外，Move 还支持引用值。参考不同于其他Move值，因为应用值是瞬态的。字节码验证器不允许引用**类型**的字段。该要求会约束引用只能在交易脚本执行期间被创建，并在该交易脚本结束之前释放引用。
+
+对结构值形状的限制确保全局状态始终是树而不是任意图。状态树中的每个存储位置都可以使用其访问路径 [24] 进行规范表示 - 从存储树中的根（局部变量𝑥或全局resource键𝑔）到由字段序列标记的后代节点的路径标识符𝑓。
+
+该语言允许引用原始值和结构，但不允许引用其他引用。 Move程序员可以使用 BorrowLoc 指令获取对局部变量的引用，使用 BorrowField 指令获取结构的字段，使用 BorrowGlobal 指令获取在帐户下发布的全局resource。 后两个构造只能用于当前模块内声明的结构类型。
