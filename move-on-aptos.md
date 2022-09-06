@@ -20,3 +20,23 @@ Move 是一种安全可靠的 Web3 编程语言，强调稀缺性和访问控制
 |类型安全|模块结构和泛型|程序结构|合约类型|
 |函数调用|不在泛型上的静态调度|静态调度|动态调度|
 
+## Aptos 的Move 特性
+
+MoveVM 的每个部署都能够通过适配器层使用附加功能扩展核心 MoveVM。 此外，MoveVM 具有支持标准操作的框架，就像计算机具有操作系统一样。
+
+Aptos Move 适配器功能包括：
+- 细粒度存储:解耦存储在账户中的数据量，这些数据量会影响与该账户相关的交易的 Gas 费用
+- 在帐户中大规模存储键、值对的[表](https://github.com/aptos-labs/aptos-core/blob/main/aptos-move/framework/aptos-stdlib/sources/table.move)
+- 通过 [Block-STM](https://medium.com/aptoslabs/block-stm-how-we-execute-over-160k-transactions-per-second-on-the-aptos-blockchain-3b003657e4ba) 实现并行化，无需用户输入即可并发执行交易
+
+Aptos 框架附带了许多有用的库：
+- 一种[代币标准](https://github.com/aptos-labs/aptos-core/blob/main/aptos-move/framework/aptos-token/sources/token.move)，可以在不发布智能合约的情况下创建 NFT 和其他丰富的代币。
+- 一种[硬币标准](https://github.com/aptos-labs/aptos-core/blob/main/aptos-move/framework/aptos-framework/sources/coin.move)，可以通过发布一个简单的模块来创建类型安全的硬币
+- 允许遍历表中所有条目的[可迭代表](https://github.com/aptos-labs/aptos-core/blob/main/aptos-move/framework/aptos-stdlib/sources/iterable_table.move)
+- 质押和代理框架
+- 用于在运行时识别给定类型的地址、模块和结构名称的 [type_of](https://github.com/aptos-labs/aptos-core/blob/main/aptos-move/framework/aptos-stdlib/sources/type_info.move) 服务
+- 允许多个签名者实体的多签名者框架
+- 一个[时间戳服务](https://github.com/aptos-labs/aptos-core/blob/main/aptos-move/framework/aptos-framework/sources/timestamp.move)，它提供一个单调递增的时钟，映射到当前的实际 unixtime
+
+更多即将推出。
+
