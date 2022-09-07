@@ -234,6 +234,9 @@ Move 不需要帐户检查。 这不仅是有益的，因为 LOC 减少了。 �
 
 显然，摆脱这些支票将是一件大事。
 
+那么，Move 如何在没有这些检查的情况下保持安全呢？ 让我们仔细看看检查的实际作用。 以下是 mint_to 指令所需的账户检查（授权持有者通过锁调用它来铸造代币）
+![](https://github.com/coming-chat/Move-white-paper/blob/main/mint_lock.jpeg)
+
 
 ## 8. 总结
 
