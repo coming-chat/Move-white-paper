@@ -218,6 +218,23 @@ Move 的资源安全功能使 Move 中的闪电贷成为可能，而无需使用
 
 该智能合约可用于例如 在原始铸币权限（管理员）仍保留铸币厂控制权的情况下，将代币的铸币功能提供给其他用户或智能合约。 如果没有这个，我们必须将铸币的完全控制权交给另一方，这并不理想，因为我们必须相信它不会滥用它。 并且不可能向多方授予许可
 
+可以在此处 ([Solana](https://github.com/kklas/token-mint-lock-example/blob/master/solana/programs/token-mint-lock/src/lib.rs)) 和此处 ([Sui](https://github.com/kklas/token-mint-lock-example/blob/master/sui/sources/treasury_lock.move)) 找到这些智能合约的完整实施。
+
+现在让我们看一下代码，看看实现有何不同。 以下是此智能合约的完整 Solana 和 Sui 实现的并排代码屏幕截图：
+![](https://github.com/coming-chat/Move-white-paper/blob/main/solana_sui.jpeg)
+
+立即引人注目的是，对于相同的功能，Solana 实现的大小是 Sui 的两倍多（230 LOC 对 104）。 这已经很重要了，因为更少的代码通常意味着更少的错误和更短的开发时间。
+
+那么这些额外的线路是从哪里来的 Solana 呢？ 如果我们仔细查看 Solana 代码，我们可以将其分为两部分——指令实现（智能合约逻辑）和账户检查。 指令实现与我们在 Sui 上的实现有点接近——136 LOC 与 Sui 上的 104。 额外的行可归因于两个 CPI 调用的样板文件（每个约 10 LOC）。 最显着的区别是由于帐户检查（上面屏幕截图中标记为红色的部分）在 Solana 上是必需的（实际上很关键），但在 Move 中不需要。 账户支票占该智能合约（91 LOC）的约 40%。
+
+Move 不需要帐户检查。 这不仅是有益的，因为 LOC 减少了。 消除进行帐户检查的必要性非常重要，因为事实证明正确实施这些检查非常棘手，而且如果您在那里犯了一个错误，通常会导致严重的漏洞和用户资金的损失。 事实上，一些最大的（就用户资金损失而言）Solana 智能合约漏洞是由不正确的账户检查引起的账户替换攻击：
+- [Wormhole](https://rekt.news/wormhole-rekt/) ($336M)
+- [Cashio](https://rekt.news/cashio-rekt/)($48M)
+- [Crema Finance](https://rekt.news/crema-finance-rekt/) ($8.8M)
+
+显然，摆脱这些支票将是一件大事。
+
+
 ## 8. 总结
 
 本文深入探讨了 Solana 和 Sui 的编程模型、它们的比较方式以及 Move 编程语言。
