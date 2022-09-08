@@ -229,3 +229,6 @@ Move 验证器的另一个有用模式是 ***aborts_if***。更具体地说，�
 虽然 Move 作为一种语言仍然是一种积极开发的语言，但它显示了一些令人兴奋的特性，似乎允许开发人员创建结构上更安全的程序。
   
 如果您有任何想法，我很乐意讨论更多。请在 Twitter 上给我发消息@notdeghost。
+  
+[原文](https://osec.io/blog/tutorials/2022-09-06-move-introduction/)
+译者：GG@ComingChat
