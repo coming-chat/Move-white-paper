@@ -127,3 +127,105 @@ Aries Markets的 ReserveCoinContainer 结构存储用于管理借贷市场的所
   
 类型的动态迭代也是不可能的（至少目前由 Move VM 设计）导致开发人员非常头疼。在这些场景中，我们凭经验观察到开发人员默认返回类型反射 API，使代码不必要地复杂化。以牺牲可用性为代价的安全是以牺牲安全为代价的。
   
+``` rust
+      /// Get the price of the token per lamport.
+    public fun get_price(type_info: TypeInfo): Decimal acquires Oracle {
+        let oracle = borrow_global_mut<Oracle>(@oracle);
+        let price = table::borrow_mut_with_default<TypeInfo, Decimal>(
+            &mut oracle.prices,
+            type_info,
+            decimal::one()
+        );
+        *price
+    }
+```
+类型关联感觉就像是预期模式的代理——将资源与实例相关联。能够存储对另一个资源实例的引用非常有用（这在 Diem 风格的Move中是可能的）。
+
+总之，当使用类型系统将资源相互绑定时，重要的是
+- 为您的资源提供独特的初始化程序
+- 直接将资源与实例关联
+
+## 形式验证
+
+形式验证是另一个令人兴奋的功能。
+  
+作为我们协议工作的一部分，我们积极使用形式验证来证明安全性的各个方面。
+  
+然而，这不是灵丹妙药。关键是弄清楚要证明什么。
+  
+一个明显的想法可能是跨特定函数的属性。例如，我们可能希望确保交换不会降低池子的价值——类似于我们报告的 [Solana AMM](https://osec.io/blog/reports/2022-04-26-spl-swap-rounding/) 舍入问题。
+  
+然而，这也可以通过一个简单的运行时断言来检查。例如，我们建议 Pontem 断言流动性池代币价值正在严格增加。
+
+``` rust
+  let cmp = u256::compare(&lp_value_after_swap_and_fee, &lp_value_before_swap_u256);
+  assert!(cmp == 2, ERR_INCORRECT_SWAP);
+```
+当我们证明函数之间的关系时，Move验证器真的很出色。
+无法通过断言轻松证明的更复杂关系的一个示例是Move存储库中的 no_free_money_theorem 函数。
+``` rust
+  // #[test] // TODO: cannot specify the test-only functions
+  fun no_free_money_theorem(coin1_in: u64, coin2_in: u64): (u64, u64) acquires Pool {
+      let share = add_liquidity(coin1_in, coin2_in);
+      remove_liquidity(share)
+  }
+  spec no_free_money_theorem {
+      pragma verify=false;
+      ensures result_1 <= coin1_in;
+      ensures result_2 <= coin2_in;
+  }
+```
+没有明确的方法可以用断言来表达这一点，因为这会在时间上分离的两个函数之间进行观察。
+  
+不变量也非常有用。例如，对费用参数（费用永远不会超过 100%）或池子的供应量强制执行不变量可以更容易地对协议进行推理。
+  
+例如，Ian 使用不变量来清楚地定义他的 AMM 状态的核心属性。
+  
+``` rust
+spec PoolState {
+    invariant supply >= MINIMUM_LIQUIDITY;
+}
+```
+Move 验证器的另一个有用模式是 ***aborts_if***。更具体地说，用 ***aborts_if*** 为 ***false*** 断言函数永不中止会很有帮助。
+
+尽管循环不变量有点笨拙，但 Ian 也能够证明一个相对不平凡的函数不会中止。
+  
+``` rust
+    fun multiply_vec_by_n_coins(input: vector<u64>): vector<u128> {
+      let amounts_times_coins = vector::empty<u128>();
+      let i = 0;
+      let n_coins = vector::length(&input);
+      while ({
+          spec {
+              invariant len(amounts_times_coins) == i;
+              invariant i <= n_coins;
+              invariant forall j in 0..i: amounts_times_coins[j] == input[j] * n_coins;
+          };
+          (i < n_coins)
+      }) {
+          vector::push_back(
+              &mut amounts_times_coins,
+              (*vector::borrow(&input, (i as u64)) as u128) * (n_coins as u128)
+          );
+          i = i + 1;
+      };
+      spec {
+          assert i == n_coins;
+          assert len(input) == n_coins;
+      };
+      amounts_times_coins
+  }
+  spec multiply_vec_by_n_coins {
+      pragma opaque;
+      aborts_if false;
+      ensures len(result) == len(input);
+      ensures forall j in 0..len(input): result[j] == input[j] * len(input);
+  }
+```
+
+## 总结
+在这篇文章中，我们探讨了 Move 的类型系统和形式化验证的含义，这是 Move 语言的两个强大功能，可以实现更安全的编程语言。
+  
+虽然 Move 作为一种语言仍然是一种积极开发的语言，但它显示了一些令人兴奋的特性，似乎允许开发人员创建结构上更安全的程序。
+  
+如果您有任何想法，我很乐意讨论更多。请在 Twitter 上给我发消息@notdeghost。
