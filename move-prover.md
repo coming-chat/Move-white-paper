@@ -9,7 +9,9 @@ Novi Research, Meta Platforms, Menlo Park, USA
 除了智能合约和 Move 语言的简单性之外，MVP 的实用性还包括三种实现方法：
 - (1) 无别名内存模型，
 - (2) 细粒度不变检查，以及 
-- (3) 单态化。 Diem 区块链的全部 Move 代码已被广泛指定，并且可以在几分钟内被 MVP 完全验证。 在集成到 GitHub 上的开源存储库之前，必须成功验证 Diem 框架中的更改。
+- (3) 单态化。 
+
+Diem 区块链的全部 Move 代码已被广泛指定，并且可以在几分钟内被 MVP 完全验证。 在集成到 GitHub 上的开源存储库之前，必须成功验证 Diem 框架中的更改。
 
 ***关键词***：智能合约·形式化验证·Move Language·Diem Blockchain
 
