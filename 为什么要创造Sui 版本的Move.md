@@ -13,8 +13,8 @@ Move 假设是，如果我们为这些关键概念提供一流的抽象，我们
 多年来，许多人为 Move 的设计和实现做出了贡献，因为该语言从一个关键思想演变为一种与平台无关的智能合约语言，其大胆的目标是成为“web3 的 JavaScript”。
 
 今天，我们很高兴地宣布将 Move 集成到 Sui 中的一个里程碑：Sui 版 Move 功能齐全，由高级工具支持，并具有大量文档和示例，包括：
-- Sui Move 对象编程教程[系列](https://docs.sui.io/build/programming-with-objects)
-- Sui Move 基础知识、设计模式和示例的[cookbook](https://examples.sui.io/)
+- Sui 版Move 对象编程教程[系列](https://docs.sui.io/build/programming-with-objects)
+- Sui 版Move 基础知识、设计模式和示例的[cookbook](https://examples.sui.io/)
 - [增强的 VSCode 插件](https://sui.io/resources-move/announcing-enhanced-move-vs-code-plugin/)，支持由 Mysten Move 团队构建的代码理解和错误诊断！
 - 将 Move 构建、测试、包管理、文档生成和 Move Prover 与 sui CLI 集成
 - 一系列[示例](https://github.com/MystenLabs/sui/tree/main/sui_programmability/examples)，包括可替代代币、NFT、DeFi 和游戏。
@@ -80,8 +80,8 @@ public entry fun mass_mint(recipients: vector<address>, ctx: &mut TxContext) {
 }
 ```
 
-Sui Move 的全局存储，以对象 ID 为键。 每个具有关键能力的结构都是一个“Sui 对象”，它必须具有全局唯一的 id 字段。 
-Sui Move 没有使用受限的 move_to 构造，而是引入了可以在任何 Sui 对象上使用的传输原语。 
+Sui 版Move 的全局存储，以对象 ID 为键。 每个具有关键能力的结构都是一个“Sui 对象”，它必须具有全局唯一的 id 字段。 
+Sui 版Move 没有使用受限的 move_to 构造，而是引入了可以在任何 Sui 对象上使用的传输原语。 
 在底层，这个原语将 id 映射到全局存储中的 CoolAsset 并添加元数据以指示该值由recipient拥有。
 
 sui 版本的 mass_mint 的一个有趣特性是它可以与所有其他交易（包括其他调用 mass_mint！）交互。 
@@ -100,7 +100,7 @@ Alice 可以通过调用 ***opt_in*** 函数来做到这一点。 然后我们�
 在这段代码中，让我们添加另一个问题：我们只允许 ***CoolAsset*** 的创建时间至少为 30 天。 这种政策对于（例如）想要阻止投机者购买/翻转活动门票的创作者很重要，因此真正的粉丝更容易以合理的价格获得它们。
 
 ``` rust
-  struct CoolAssetStore has key {
+struct CoolAssetStore has key {
   assets: Table<TokenId, CoolAsset>
 }
 public fun opt_in(addr: &signer) {
